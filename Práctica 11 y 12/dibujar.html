@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Clasificador</title>
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 30px;
+      }
+      canvas {
+        border: 2px solid black;
+        cursor: crosshair;
+        background: black;
+      }
+      button {
+        margin: 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      #resultado {
+        font-size: 48px;
+        font-weight: bold;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Dibuja un número</h2>
+    <canvas id="miCanvas" width="280" height="280"></canvas>
+    <br />
+    <button onclick="limpiar()">Limpiar</button>
+    <div id="resultado">—</div>
+
+    <script>
+      const canvas = document.getElementById("miCanvas");
+      const ctx = canvas.getContext("2d");
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 18;
+      ctx.lineCap = "round";
+
+      let dibujando = false;
+
+      canvas.addEventListener("mousedown", (e) => {
+        dibujando = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      });
+      canvas.addEventListener("mousemove", (e) => {
+        if (!dibujando) return;
+        ctx.lineTo(e.offsetX, e.offsetY);
+        ctx.stroke();
+      });
+      canvas.addEventListener("mouseup", () => {
+        dibujando = false;
+        enviar();
+      });
+
+      function limpiar() {
+        ctx.clearRect(0, 0, 280, 280);
+        document.getElementById("resultado").textContent = "—";
+      }
+
+      function enviar() {
+        const tmp = document.createElement("canvas");
+        tmp.width = 28;
+        tmp.height = 28;
+        const tCtx = tmp.getContext("2d");
+        tCtx.drawImage(canvas, 0, 0, 28, 28);
+
+        var pixels = [];
+        for (var x = 0; x < 28; x++) {
+          for (var y = 0; y < 28; y++) {
+            var data = tCtx.getImageData(y, x, 1, 1).data;
+            var color = (Math.round((data[3] / 255) * 100) / 100).toFixed(2);
+            pixels.push(color);
+          }
+        }
+
+        $.post(
+          "http://localhost:8000",
+          { pixeles: pixels.join(",") },
+          function (response) {
+            $("#resultado").html("Predicción: " + response);
+          }
+        );
+      }
+    </script>
+  </body>
+</html>
